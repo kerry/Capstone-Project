@@ -50,6 +50,7 @@
             <ImageView
                 android:id="@+id/post_preview"
                 android:scaleType="centerInside"
+                android:contentDescription="@string/post_preview_image_content_description"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
@@ -63,6 +64,7 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:layout_gravity="center"
+                    android:contentDescription="@string/video_play_icon_content_description"
                     android:src="@drawable/play" />
             </FrameLayout>
 

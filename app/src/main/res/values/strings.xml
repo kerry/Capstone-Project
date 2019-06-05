@@ -3,4 +3,16 @@
     <string name="few_seconds_ago">few seconds ago</string>
     <string name="appwidget_text">RedditLine Posts</string>
     <string name="add_widget">Add widget</string>
+    <string name="comments_error">Error occured while loading comments</string>
+    <string name="refresh_button_content_description">Refresh Button</string>
+    <string name="upvote_button_content_description">Upvote Button</string>
+    <string name="downvote_button_content_description">Downvote Button</string>
+    <string name="comments_button_content_description">Open Comments Button</string>
+    <string name="logo_image_content_description">Logo</string>
+    <string name="login_info">To see your subreddit posts, login to reddit</string>
+    <string name="login">Login</string>
+    <string name="swiping_info">Swipe right or left to view more</string>
+    <string name="post_preview_image_content_description">Post Preview Image</string>
+    <string name="video_play_icon_content_description">Video Play Icon</string>
+    <string name="comments">Comments</string>
 </resources>

@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "308903158898",
+    "firebase_url": "https://android-capstone-5c658.firebaseio.com",
+    "project_id": "android-capstone-5c658",
+    "storage_bucket": "android-capstone-5c658.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:308903158898:android:cc4fcd91ecb52ea7",
+        "android_client_info": {
+          "package_name": "com.prateekgrover.redditline"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "308903158898-8anir8pae7b05oir1u4uniac5t7em2v4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.prateekgrover.redditline",
+            "certificate_hash": "576b80b77c22a5b9266e0bbb75b9104c9df7c27e"
+          }
+        },
+        {
+          "client_id": "308903158898-d99hag7shpkf20ivvtcido9sj24k3vft.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYMLYNC_hz297h9oH3ASSOU374siCdOdY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "308903158898-d99hag7shpkf20ivvtcido9sj24k3vft.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

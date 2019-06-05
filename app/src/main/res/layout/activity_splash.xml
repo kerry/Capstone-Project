@@ -12,7 +12,7 @@
         android:layout_width="100dp"
         android:layout_height="100dp"
         android:scaleType="centerCrop"
-        android:contentDescription="logo"
+        android:contentDescription="@string/logo_image_content_description"
         android:src="@drawable/redditline"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

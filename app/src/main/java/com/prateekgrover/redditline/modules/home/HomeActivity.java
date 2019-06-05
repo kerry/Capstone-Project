@@ -25,6 +25,7 @@ import androidx.viewpager.widget.ViewPager;
 import com.prateekgrover.redditline.R;
 import com.prateekgrover.redditline.models.RedditPost;
 import com.prateekgrover.redditline.modules.comments.CommentsActivity;
+import com.prateekgrover.redditline.utils.AnalyticsHelper;
 
 import net.openid.appauth.AuthorizationRequest;
 import net.openid.appauth.AuthorizationService;
@@ -51,6 +52,7 @@ public class HomeActivity extends AppCompatActivity implements HomePagerAdapter.
     private ImageButton mDownvoteButton;
     private ImageButton mCommentsButton;
     private LinearLayout mBottomActionsView;
+    private AnalyticsHelper mAnalyticsHelper;
     private int mCurrentPosition = 0;
 
     @Override
@@ -79,6 +81,7 @@ public class HomeActivity extends AppCompatActivity implements HomePagerAdapter.
 
         mHomePagerAdapter = new HomePagerAdapter(getSupportFragmentManager(), this);
         mViewPager.setAdapter(mHomePagerAdapter);
+        mAnalyticsHelper = AnalyticsHelper.getInstance(this);
         mCurrentRedditPosts = new ArrayList<>();
 
         boolean isLogin = false;
@@ -155,6 +158,7 @@ public class HomeActivity extends AppCompatActivity implements HomePagerAdapter.
             @Override
             public void onClick(View v) {
                 RedditPost redditPost = mCurrentRedditPosts.get(mCurrentPosition);
+                mAnalyticsHelper.recordUpvoteButtonClickEvent(redditPost.getPostId());
                 int dir = redditPost.isLikes() != null ? (redditPost.isLikes() ? 0 : 1) : 1;
 
                 mHomeViewModel.voteButtonClicked(mCurrentRedditPosts.get(mCurrentPosition), dir).observe(HomeActivity.this, new Observer<Boolean>() {
@@ -175,6 +179,7 @@ public class HomeActivity extends AppCompatActivity implements HomePagerAdapter.
             @Override
             public void onClick(View v) {
                 RedditPost redditPost = mCurrentRedditPosts.get(mCurrentPosition);
+                mAnalyticsHelper.recordDownvoteButtonClickEvent(redditPost.getPostId());
                 int dir = redditPost.isLikes() != null ? (redditPost.isLikes() ? -1 : 0) : -1;
 
                 mHomeViewModel.voteButtonClicked(mCurrentRedditPosts.get(mCurrentPosition), dir).observe(HomeActivity.this, new Observer<Boolean>() {
@@ -194,8 +199,10 @@ public class HomeActivity extends AppCompatActivity implements HomePagerAdapter.
         mCommentsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                RedditPost redditPost = mCurrentRedditPosts.get(mCurrentPosition);
+                mAnalyticsHelper.recordCommentsButtonClickEvent(redditPost.getPostId());
                 Intent intent = new Intent(HomeActivity.this, CommentsActivity.class);
-                intent.putExtra("redditPost", mCurrentRedditPosts.get(mCurrentPosition));
+                intent.putExtra("redditPost", redditPost);
                 startActivity(intent);
             }
         });
@@ -234,9 +241,11 @@ public class HomeActivity extends AppCompatActivity implements HomePagerAdapter.
     }
 
     public void loginButtonClicked() {
+        mAnalyticsHelper.recordLoginButtonClickEvent();
         mHomeViewModel.actionLiveData.observe(this, new Observer<AuthorizationRequest>() {
             @Override
             public void onChanged(AuthorizationRequest authorizationRequest) {
+
                 mHomeViewModel.actionLiveData.removeObserver(this);
                 AuthorizationService authorizationService = new AuthorizationService(HomeActivity.this);
 

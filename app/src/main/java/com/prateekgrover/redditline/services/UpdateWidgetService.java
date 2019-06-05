@@ -4,27 +4,20 @@ import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
-import android.widget.RemoteViews;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
-import androidx.room.Update;
 
-import com.amitshekhar.model.UpdateRowResponse;
 import com.prateekgrover.redditline.R;
 import com.prateekgrover.redditline.models.RedditPost;
 import com.prateekgrover.redditline.models.RedditPostsResponse;
 import com.prateekgrover.redditline.models.RedditPostsResponseDataChildren;
-import com.prateekgrover.redditline.modules.splash.SplashActivity;
 import com.prateekgrover.redditline.modules.widget.RedditLine;
-import com.prateekgrover.redditline.modules.widget.RedditLineRemoteViewsService;
 import com.prateekgrover.redditline.repository.database.DatabaseManager;
 import com.prateekgrover.redditline.repository.database.SharedPreferenceManager;
 import com.prateekgrover.redditline.repository.network.NetworkManager;

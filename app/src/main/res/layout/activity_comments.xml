@@ -22,7 +22,7 @@
             android:layout_height="wrap_content"
             android:background="@color/colorAccent"
             android:layout_gravity="center"
-            android:text="Error occured while loading comments" />
+            android:text="@string/comments_error" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
