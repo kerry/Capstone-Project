@@ -1,5 +1,9 @@
 package com.prateekgrover.redditline.repository.network;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.prateekgrover.redditline.utils.RedditCommentsResponseTypeAdapterFactory;
+
 import java.io.IOException;
 
 import okhttp3.Interceptor;
@@ -47,9 +51,13 @@ public final class NetworkManager {
 
         httpClient.addInterceptor(logging);
 
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapterFactory(new RedditCommentsResponseTypeAdapterFactory())
+                .create();
+
         mRetrofitInstance = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create(gson))
                 .client(httpClient.build())
                 .build();
 

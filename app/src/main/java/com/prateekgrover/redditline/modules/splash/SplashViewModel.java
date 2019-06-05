@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel;
 
 import com.prateekgrover.redditline.repository.database.SharedPreferenceManager;
 import com.prateekgrover.redditline.repository.network.NetworkManager;
+import com.prateekgrover.redditline.utils.AppState;
 import com.prateekgrover.redditline.utils.SingleLiveEvent;
 
 import net.openid.appauth.AuthState;
@@ -26,6 +27,7 @@ public class SplashViewModel extends AndroidViewModel {
         try {
             AuthState authState = AuthState.jsonDeserialize(authStateString);
             NetworkManager.getInstance().updateAccessToken(authState.getAccessToken());
+            AppState.getInstance().updateAuthState(authState);
             actionLiveData.setValue(authState.isAuthorized() && !authState.getNeedsTokenRefresh());
         } catch (NullPointerException | JSONException e) {
             actionLiveData.setValue(false);

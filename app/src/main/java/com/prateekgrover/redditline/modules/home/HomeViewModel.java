@@ -7,14 +7,17 @@ import android.net.Uri;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.prateekgrover.redditline.models.RedditPost;
 import com.prateekgrover.redditline.models.RedditPostsResponse;
-import com.prateekgrover.redditline.models.RedditPostsResponseData;
 import com.prateekgrover.redditline.models.RedditPostsResponseDataChildren;
+import com.prateekgrover.redditline.repository.database.DatabaseManager;
 import com.prateekgrover.redditline.repository.database.SharedPreferenceManager;
 import com.prateekgrover.redditline.repository.network.NetworkManager;
+import com.prateekgrover.redditline.utils.AppExecutors;
+import com.prateekgrover.redditline.utils.AppState;
 import com.prateekgrover.redditline.utils.SingleLiveEvent;
 
 import net.openid.appauth.AuthState;
@@ -31,19 +34,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class HomeViewModel extends AndroidViewModel {
+    private DatabaseManager mDb;
     public SingleLiveEvent actionLiveData;
+    public MutableLiveData<Boolean> showLoading;
     public final MutableLiveData<List<RedditPost>> redditPostsLiveData = new MutableLiveData<>();
     private SharedPreferenceManager mSharedPreferenceManager;
+    private boolean fetchMore = false;
 
     public HomeViewModel(@NonNull Application application) {
         super(application);
         actionLiveData = new SingleLiveEvent();
+        showLoading = new MutableLiveData<>();
         mSharedPreferenceManager = SharedPreferenceManager.getInstance(getApplication().getApplicationContext());
+        mDb = DatabaseManager.getInstance(application);
     }
 
     public void loginButtonClicked() {
@@ -85,6 +94,7 @@ public class HomeViewModel extends AndroidViewModel {
                         if (tokenResponse != null) {
                             authState.update(tokenResponse, exception);
                             mSharedPreferenceManager.putString(SharedPreferenceManager.Keys.AUTH, authState.jsonSerializeString());
+                            AppState.getInstance().updateAuthState(authState);
                             actionLiveData.setValue(true);
                             NetworkManager.getInstance().updateAccessToken(tokenResponse.accessToken);
                             fetchPosts();
@@ -95,24 +105,62 @@ public class HomeViewModel extends AndroidViewModel {
         }
     }
 
+    public void getItemCalledAtPosition(int position) {
+        if (!fetchMore && position > redditPostsLiveData.getValue().size() - 3) {
+            fetchMore = true;
+            showLoading.setValue(true);
+            fetchPosts();
+        }
+    }
+
+    public LiveData<Boolean> voteButtonClicked(RedditPost redditPost, int dir) {
+        final MutableLiveData<Boolean> upvote = new MutableLiveData<>();
+        NetworkManager.getInstance().getRedditAPI().vote(dir, redditPost.getPostName()).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                upvote.setValue(true);
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                upvote.setValue(false);
+            }
+        });
+
+        return upvote;
+    }
+
     public void fetchPosts() {
         Call<RedditPostsResponse> redditPostsResponseCall;
-        List<RedditPost> redditPosts = redditPostsLiveData.getValue();
-        if (redditPosts != null) {
-            redditPostsResponseCall = NetworkManager.getInstance().getRedditAPI().getMorePosts(redditPosts.get(redditPosts.size()-1).getPostId());
+        final List<RedditPost> currentRedditPosts = redditPostsLiveData.getValue();
+        if (currentRedditPosts != null) {
+            redditPostsResponseCall = NetworkManager.getInstance().getRedditAPI().getMorePosts(currentRedditPosts.get(currentRedditPosts.size()-1).getPostName());
         } else {
             redditPostsResponseCall = NetworkManager.getInstance().getRedditAPI().getTopPosts();
         }
         redditPostsResponseCall.enqueue(new Callback<RedditPostsResponse>() {
             @Override
             public void onResponse(Call<RedditPostsResponse> call, Response<RedditPostsResponse> response) {
+                fetchMore = false;
                 RedditPostsResponse redditPostsResponse = response.body();
                 if (redditPostsResponse != null) {
                     ArrayList<RedditPost> redditPosts = new ArrayList<>();
                     for (RedditPostsResponseDataChildren child : redditPostsResponse.getRedditPostsResponseData().getChildren()) {
                         redditPosts.add(child.getRedditPost());
                     }
-                    redditPostsLiveData.setValue(redditPosts);
+                    AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            mDb.redditPostDao().insertRedditPosts(redditPosts);
+                        }
+                    });
+                    if (currentRedditPosts == null) {
+                        redditPostsLiveData.setValue(redditPosts);
+                    } else {
+                        currentRedditPosts.addAll(redditPosts);
+                        redditPostsLiveData.setValue(currentRedditPosts);
+                    }
+
                 } else {
                     redditPostsLiveData.setValue(null);
                 }
@@ -120,6 +168,7 @@ public class HomeViewModel extends AndroidViewModel {
 
             @Override
             public void onFailure(Call<RedditPostsResponse> call, Throwable t) {
+                fetchMore = false;
                 redditPostsLiveData.setValue(null);
             }
         });

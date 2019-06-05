@@ -2,24 +2,29 @@ package com.prateekgrover.redditline.modules.home;
 
 import android.app.PendingIntent;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
+import androidx.core.content.ContextCompat;
+import androidx.core.widget.ImageViewCompat;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager.widget.ViewPager;
 
-import com.adgvcxz.cardlayoutmanager.CardLayoutManager;
-import com.adgvcxz.cardlayoutmanager.CardSnapHelper;
-import com.adgvcxz.cardlayoutmanager.OnCardSwipeListener;
 import com.prateekgrover.redditline.R;
 import com.prateekgrover.redditline.models.RedditPost;
+import com.prateekgrover.redditline.modules.comments.CommentsActivity;
 
 import net.openid.appauth.AuthorizationRequest;
 import net.openid.appauth.AuthorizationService;
@@ -27,18 +32,31 @@ import net.openid.appauth.AuthorizationService;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HomeActivity extends AppCompatActivity {
+public class HomeActivity extends AppCompatActivity implements HomePagerAdapter.RedditPostsRefreshListener {
 
     private List<RedditPost> mCurrentRedditPosts;
-    private HomeCardAdapter mHomeCardAdapter;
+    private HomePagerAdapter mHomePagerAdapter;
     private HomeViewModel mHomeViewModel;
-    private CardLayoutManager mLayoutManager;
     private String USED_INTENT = "1";
 
     private List<RedditPost> mRedditPosts;
     private CardView mLoginView;
-    private RecyclerView mRecyclerView;
+    private ViewPager mViewPager;
     private ProgressBar mProgressBar;
+    private FrameLayout mLoadMoreView;
+    private ProgressBar mLoadMoreProgressBar;
+    private ImageButton mRefreshButton;
+    private TextView mInfoText;
+    private ImageButton mUpvoteButton;
+    private ImageButton mDownvoteButton;
+    private ImageButton mCommentsButton;
+    private LinearLayout mBottomActionsView;
+    private int mCurrentPosition = 0;
+
+    @Override
+    public void getItemCalledAtPosition(int position) {
+        mHomeViewModel.getItemCalledAtPosition(position);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,80 +65,27 @@ public class HomeActivity extends AppCompatActivity {
 
         mHomeViewModel = ViewModelProviders.of(this).get(HomeViewModel.class);
 
-        mRecyclerView = findViewById(R.id.recycler_view);
+        mViewPager = findViewById(R.id.view_pager);
         mProgressBar = findViewById(R.id.progress_bar);
         mLoginView = findViewById(R.id.login_view);
+        mLoadMoreView = findViewById(R.id.load_more_view);
+        mLoadMoreProgressBar = findViewById(R.id.loading_pb);
+        mRefreshButton = findViewById(R.id.refresh);
+        mInfoText = findViewById(R.id.info_text);
+        mUpvoteButton = findViewById(R.id.upvote);
+        mDownvoteButton = findViewById(R.id.downvote);
+        mCommentsButton = findViewById(R.id.comments);
+        mBottomActionsView = findViewById(R.id.bottom_actions);
 
-        mRecyclerView.setOverScrollMode(RecyclerView.OVER_SCROLL_NEVER);
-        mLayoutManager = new CardLayoutManager(CardLayoutManager.TransX.RIGHT, CardLayoutManager.TransY.NONE);
-        mLayoutManager.setVerticalSwipe(false);
-        mRecyclerView.setLayoutManager(mLayoutManager);
-
-        mHomeCardAdapter = new HomeCardAdapter();
-        mRecyclerView.setAdapter(mHomeCardAdapter);
-
-        new CardSnapHelper().attachToRecyclerView(mRecyclerView);
-
-        mLayoutManager.setYInterval(getResources().getDimensionPixelSize(R.dimen.card_bottom_interval));
-        mLayoutManager.setShowCardCount(2);
-
+        mHomePagerAdapter = new HomePagerAdapter(getSupportFragmentManager(), this);
+        mViewPager.setAdapter(mHomePagerAdapter);
         mCurrentRedditPosts = new ArrayList<>();
-
-        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-                if (newState == RecyclerView.SCROLL_STATE_IDLE && mRedditPosts != null) {
-                    System.out.println("TT: Adding more");
-                    mCurrentRedditPosts.addAll(mRedditPosts);
-                    mRedditPosts = null;
-                    mHomeCardAdapter.notifyDataSetChanged();
-                    showPosts();
-                    mLayoutManager.setHorizontalSwipe(true);
-                }
-            }
-        });
-
-        mLayoutManager.setOnCardSwipeListener(new OnCardSwipeListener() {
-            @Override
-            public void onSwipe(View view, int position, int dx, int dy) {
-                System.out.println("anim on swipe");
-            }
-
-            @Override
-            public void onAnimOutStart(View view, int position, int direction) {
-                System.out.println("anim out start " + position + " " + direction);
-            }
-
-            @Override
-            public void onAnimOutStop(View view, int position, int direction) {
-                System.out.println("anim out stop " + position + " " + direction);
-                if (position == mCurrentRedditPosts.size() - 5) {
-                    System.out.println("TT: going for refresh");
-                    mHomeViewModel.fetchPosts();
-                } else if (position == mCurrentRedditPosts.size() - 2) {
-                    mLayoutManager.setHorizontalSwipe(false);
-                    System.out.println("TT: clearing existing data");
-                }
-            }
-
-            @Override
-            public void onAnimInStart(View view, int position) {
-                System.out.println("anim in start " + position + " ");
-            }
-
-            @Override
-            public void onAnimInStop(View view, int position) {
-                System.out.println("anim in stop " + position + " ");
-            }
-        });
 
         boolean isLogin = false;
         Intent intent = getIntent();
         if (intent != null && intent.hasExtra("isLogin")) {
             isLogin = intent.getBooleanExtra("isLogin", false);
         }
-
 
         final Button loginButton = findViewById(R.id.login_button);
         loginButton.setOnClickListener(new View.OnClickListener() {
@@ -130,44 +95,142 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
+        mRefreshButton.setVisibility(View.VISIBLE);
+        mLoadMoreProgressBar.setVisibility(View.INVISIBLE);
+        mInfoText.setVisibility(View.INVISIBLE);
+
+        mHomeViewModel.showLoading.observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean value) {
+                if (value) {
+                    mRefreshButton.setVisibility(View.INVISIBLE);
+                    mLoadMoreProgressBar.setVisibility(View.VISIBLE);
+                    mLoadMoreProgressBar.animate();
+                }
+            }
+        });
+
         mHomeViewModel.redditPostsLiveData.observe(this, new Observer<List<RedditPost>>() {
             @Override
             public void onChanged(List<RedditPost> redditPosts) {
+                mLoadMoreProgressBar.clearAnimation();
+                mRefreshButton.setVisibility(View.VISIBLE);
+                mLoadMoreProgressBar.setVisibility(View.INVISIBLE);
+                mInfoText.setVisibility(View.VISIBLE);
                 if (redditPosts != null) {
                     System.out.println("TT: in on changed");
-                    if (mCurrentRedditPosts.isEmpty() || mRecyclerView.getScrollState() == RecyclerView.SCROLL_STATE_IDLE) {
-                        System.out.println("TT: in new data");
-                        mCurrentRedditPosts.addAll(redditPosts);
-                        mHomeCardAdapter.updateData(mCurrentRedditPosts);
-                        showPosts();
-                        mLayoutManager.setHorizontalSwipe(true);
-                    } else {
-                        System.out.println("TT: in old data");
-                        mRedditPosts = redditPosts;
-                    }
+                    mCurrentRedditPosts.addAll(redditPosts);
+                    mHomePagerAdapter.updateData(redditPosts);
+                    showPosts();
+                    Boolean isLiked = mCurrentRedditPosts.get(0).isLikes();
+                    mUpvoteButton.setSelected(isLiked != null && isLiked);
+                    mDownvoteButton.setSelected(isLiked != null && !isLiked);
                 } else {
                     System.out.println("Error in getting data");
                 }
             }
         });
 
+        mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                mCurrentPosition = position;
+                Boolean isLiked = mCurrentRedditPosts.get(position).isLikes();
+                mUpvoteButton.setSelected(isLiked != null && isLiked);
+                mDownvoteButton.setSelected(isLiked != null && !isLiked);
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+
+            }
+        });
+
+        mUpvoteButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                RedditPost redditPost = mCurrentRedditPosts.get(mCurrentPosition);
+                int dir = redditPost.isLikes() != null ? (redditPost.isLikes() ? 0 : 1) : 1;
+
+                mHomeViewModel.voteButtonClicked(mCurrentRedditPosts.get(mCurrentPosition), dir).observe(HomeActivity.this, new Observer<Boolean>() {
+                    @Override
+                    public void onChanged(Boolean value) {
+                        System.out.println("upvote done " + value);
+                        if (value) {
+                            mCurrentRedditPosts.get(mCurrentPosition).setLikes(dir == 0 ? null : dir == 1);
+                            mUpvoteButton.setSelected(dir == 1);
+                            mDownvoteButton.setSelected(false);
+                        }
+                    }
+                });
+            }
+        });
+
+        mDownvoteButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                RedditPost redditPost = mCurrentRedditPosts.get(mCurrentPosition);
+                int dir = redditPost.isLikes() != null ? (redditPost.isLikes() ? -1 : 0) : -1;
+
+                mHomeViewModel.voteButtonClicked(mCurrentRedditPosts.get(mCurrentPosition), dir).observe(HomeActivity.this, new Observer<Boolean>() {
+                    @Override
+                    public void onChanged(Boolean value) {
+                        System.out.println("upvote done " + value);
+                        if (value) {
+                            mCurrentRedditPosts.get(mCurrentPosition).setLikes(dir == 0 ? null : dir == 1);
+                            mUpvoteButton.setSelected(false);
+                            mDownvoteButton.setSelected(dir == -1);
+                        }
+                    }
+                });
+            }
+        });
+
+        mCommentsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(HomeActivity.this, CommentsActivity.class);
+                intent.putExtra("redditPost", mCurrentRedditPosts.get(mCurrentPosition));
+                startActivity(intent);
+            }
+        });
+
         if (isLogin) {
-            mRecyclerView.setVisibility(View.INVISIBLE);
+            mViewPager.setVisibility(View.INVISIBLE);
             mProgressBar.setVisibility(View.VISIBLE);
             mLoginView.setVisibility(View.INVISIBLE);
+            mLoadMoreView.setVisibility(View.INVISIBLE);
+            mInfoText.setVisibility(View.INVISIBLE);
+            mBottomActionsView.setVisibility(View.INVISIBLE);
             mHomeViewModel.fetchPosts();
         } else {
-            mRecyclerView.setVisibility(View.INVISIBLE);
+            mViewPager.setVisibility(View.INVISIBLE);
             mProgressBar.setVisibility(View.INVISIBLE);
             mLoginView.setVisibility(View.VISIBLE);
+            mLoadMoreView.setVisibility(View.INVISIBLE);
+            mInfoText.setVisibility(View.INVISIBLE);
+            mBottomActionsView.setVisibility(View.INVISIBLE);
         }
     }
+
+//    private void toggleUpvoteButton(boolean value) {
+//        ImageViewCompat.setImageTintList(mUpvoteButton, ColorStateList.valueOf(ContextCompat.getColor(this, R.color.colorAccent)));
+//        ImageViewCompat.setImageTintList(mDownvoteButton, ColorStateList.valueOf(ContextCompat.getColor(this, R.color.)));
+//        mDownvoteButton.setBackgroundColor(this.getResources().getColor(R.color.textGrayBackground));
+//    }
 
     private void showPosts() {
         mProgressBar.clearAnimation();
         mLoginView.setVisibility(View.INVISIBLE);
         mProgressBar.setVisibility(View.INVISIBLE);
-        mRecyclerView.setVisibility(View.VISIBLE);
+        mViewPager.setVisibility(View.VISIBLE);
+        mLoadMoreView.setVisibility(View.VISIBLE);
+        mBottomActionsView.setVisibility(View.VISIBLE);
     }
 
     public void loginButtonClicked() {

@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.prateekgrover.redditline">
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"></uses-permission>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -10,7 +12,26 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".modules.home.HomeActivity"
+        <receiver android:name=".modules.widget.RedditLine">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="REDDITLINE_WIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/reddit_line_info" />
+        </receiver>
+
+        <activity android:name=".modules.comments.CommentsActivity" />
+        <activity
+            android:name=".modules.videoplayer.VideoPlayerActivity"
+            android:theme="@style/FullScreenAppCompatActivityTheme" />
+        <activity
+            android:name=".modules.home.HomeActivity"
             android:theme="@style/FullScreenAppCompatActivityTheme" />
         <activity
             android:name=".modules.splash.SplashActivity"
@@ -35,7 +56,12 @@
                     android:scheme="com.prateekgrover.redditline" />
             </intent-filter>
         </activity>
-
+        <service
+            android:name=".modules.widget.RedditLineRemoteViewsService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+        <service android:name=".services.UpdateWidgetService"
+            android:exported="false"/>
     </application>
 
 </manifest>
